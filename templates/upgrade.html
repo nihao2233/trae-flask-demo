@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}固件升级 · 多模态采集上位机{% endblock %}
+{% block content %}
+<h1 class="page-title">固件升级</h1>
+<div class="upgrade-page">
+    <section class="panel">
+        <div class="panel-head"><h2>升级配置</h2></div>
+        <div class="panel-body upgrade-form">
+            <form id="upgradeForm">
+                <div class="form-row">
+                    <label>当前版本</label>
+                    <input type="text" id="curVer" value="v1.0.0" disabled>
+                </div>
+                <div class="form-row">
+                    <label>目标版本</label>
+                    <input type="text" name="version" placeholder="例如 1.0.1" value="1.0.1">
+                </div>
+                <div class="form-row">
+                    <label>固件文件</label>
+                    <input type="file" accept=".bin,.hex" name="firmware">
+                </div>
+                <div class="form-row">
+                    <label></label>
+                    <button type="submit" class="btn btn-primary" id="startUpgradeBtn">开始升级</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px" id="progressPanel" style="display:none">
+        <div class="panel-head"><h2>升级进度</h2></div>
+        <div class="panel-body">
+            <div class="progress-bar" style="margin-bottom:8px">
+                <div class="fill" id="upgradeFill" style="width:0%"></div>
+            </div>
+            <div style="text-align:center;font-family:monospace;color:var(--text-secondary)" id="progressText">0%</div>
+            <div class="upgrade-steps" id="upgradeSteps">
+                <div class="upgrade-step" id="step1"><span class="step-num">1</span> 校验固件文件</div>
+                <div class="upgrade-step" id="step2"><span class="step-num">2</span> 擦除 Flash</div>
+                <div class="upgrade-step" id="step3"><span class="step-num">3</span> 写入固件</div>
+                <div class="upgrade-step" id="step4"><span class="step-num">4</span> CRC32 校验</div>
+                <div class="upgrade-step" id="step5"><span class="step-num">5</span> 设备重启</div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+document.getElementById('upgradeForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const panel = document.getElementById('progressPanel');
+    panel.style.display = 'block';
+    const fill = document.getElementById('upgradeFill');
+    const text = document.getElementById('progressText');
+    const steps = [
+        { id: 'step1', name: '校验固件文件', pct: [0, 15] },
+        { id: 'step2', name: '擦除 Flash', pct: [15, 30] },
+        { id: 'step3', name: '写入固件', pct: [30, 85] },
+        { id: 'step4', name: 'CRC32 校验', pct: [85, 95] },
+        { id: 'step5', name: '设备重启', pct: [95, 100] },
+    ];
+    for (let i = 0; i < steps.length; i++) {
+        document.getElementById(steps[i].id).classList.add('active');
+        for (let p = steps[i].pct[0]; p <= steps[i].pct[1]; p += 2) {
+            fill.style.width = p + '%';
+            text.textContent = p + '%';
+            await new Promise(r => setTimeout(r, 50));
+        }
+        document.getElementById(steps[i].id).classList.remove('active');
+        document.getElementById(steps[i].id).classList.add('done');
+    }
+    alert('升级成功！设备已重启。');
+});
+</script>
+{% endblock %}

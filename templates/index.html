@@ -1,70 +1,56 @@
 {% extends "base.html" %}
-{% set active = "index" %}
-{% set page_js = "main.js" %}
-{% block title %}主监测 · 心电监测系统{% endblock %}
-
+{% block title %}主监测 · 多模态采集上位机{% endblock %}
 {% block content %}
+<h1 class="page-title">主监测</h1>
 <div class="monitor-grid">
-    <!-- 左侧：4 路 ECG -->
+    <!-- 4 路 ECG -->
     <section class="panel ecg-panel">
         <div class="panel-head">
             <h2>心电波形 (ECG)</h2>
             <div class="head-actions">
-                <label class="channel-export">
-                    <input type="checkbox" class="ecg-ch" value="0" checked> 通道1
-                </label>
-                <label class="channel-export">
-                    <input type="checkbox" class="ecg-ch" value="1" checked> 通道2
-                </label>
-                <label class="channel-export">
-                    <input type="checkbox" class="ecg-ch" value="2" checked> 通道3
-                </label>
-                <label class="channel-export">
-                    <input type="checkbox" class="ecg-ch" value="3" checked> 通道4
-                </label>
+                <label class="channel-export"><input type="checkbox" class="ecg-ch" value="0" checked> CH1</label>
+                <label class="channel-export"><input type="checkbox" class="ecg-ch" value="1" checked> CH2</label>
+                <label class="channel-export"><input type="checkbox" class="ecg-ch" value="2" checked> CH3</label>
+                <label class="channel-export"><input type="checkbox" class="ecg-ch" value="3" checked> CH4</label>
             </div>
         </div>
         <canvas id="ecgCanvas" width="900" height="320"></canvas>
         <div class="ecg-legend">
-            <span class="lg lg-1">● 通道 1</span>
-            <span class="lg lg-2">● 通道 2</span>
-            <span class="lg lg-3">● 通道 3</span>
-            <span class="lg lg-4">● 通道 4</span>
+            <span class="lg lg-1"><span class="dot"></span> 通道 1</span>
+            <span class="lg lg-2"><span class="dot"></span> 通道 2</span>
+            <span class="lg lg-3"><span class="dot"></span> 通道 3</span>
+            <span class="lg lg-4"><span class="dot"></span> 通道 4</span>
         </div>
     </section>
 
-    <!-- 右上：4×4 压力 / 电阻矩阵 -->
+    <!-- 4×4 矩阵缩略 -->
     <section class="panel matrix-panel">
         <div class="panel-head">
-            <h2>4×4 压力/电阻矩阵</h2>
+            <h2>4×4 压阻矩阵</h2>
             <div class="head-actions">
-                <select id="matrixMode">
+                <select id="matrixMode" class="playback-select">
                     <option value="resistance">电阻 (kΩ)</option>
-                    <option value="pressure">压力 (kPa)</option>
+                    <option value="pressure">压力 (N)</option>
                 </select>
-                <button class="ghost-btn" id="swapBtn">互换位置</button>
+                <button class="btn btn-ghost btn-sm" onclick="location.href='/matrix'">详情</button>
             </div>
         </div>
-        <div class="matrix-wrap" id="matrixWrap"></div>
+        <div class="matrix-grid" id="matrixGrid"></div>
         <div class="matrix-legend">
-            <span class="ml-low">低</span>
-            <span class="ml-bar"></span>
-            <span class="ml-high">高</span>
+            <span>低</span><span class="ml-bar"></span><span>高</span>
         </div>
     </section>
 
-    <!-- 右中：2 路压电薄膜 -->
+    <!-- 2 路压电 -->
     <section class="panel piezo-panel">
         <div class="panel-head">
-            <h2>压电薄膜信号</h2>
-            <div class="head-actions">
-                <span class="meta">灵敏度: 1.0 mV/N</span>
-            </div>
+            <h2>压电薄膜 (PVDF)</h2>
+            <span class="meta" style="font-size:var(--font-small);color:var(--text-tertiary)">灵敏度 1.0 mV/N</span>
         </div>
         <canvas id="piezoCanvas" width="420" height="180"></canvas>
         <div class="piezo-legend">
-            <span class="lg lg-1">● 薄膜 1</span>
-            <span class="lg lg-2">● 薄膜 2</span>
+            <span class="lg lg-1"><span class="dot"></span> 薄膜 1</span>
+            <span class="lg lg-2"><span class="dot"></span> 薄膜 2</span>
         </div>
     </section>
 
@@ -73,41 +59,167 @@
         <div class="panel-head"><h2>生命体征</h2></div>
         <div class="vitals-grid">
             <div class="vital-card hr-card">
-                <div class="vital-label">心率</div>
+                <div class="vital-label">心率 HR</div>
                 <div class="vital-value" id="hrValue">--</div>
                 <div class="vital-unit">BPM</div>
             </div>
             <div class="vital-card">
+                <div class="vital-label">呼吸率 RR</div>
+                <div class="vital-value" id="rrValue" style="font-size:22px">--</div>
+                <div class="vital-unit">次/分</div>
+            </div>
+            <div class="vital-card">
                 <div class="vital-label">采样率</div>
-                <div class="vital-value" id="srValue">500</div>
+                <div class="vital-value" id="srValue" style="font-size:22px">250</div>
                 <div class="vital-unit">Hz</div>
-            </div>
-            <div class="vital-card">
-                <div class="vital-label">推送</div>
-                <div class="vital-value" id="fpsValue">0</div>
-                <div class="vital-unit">evt/s</div>
-            </div>
-            <div class="vital-card">
-                <div class="vital-label">记录</div>
-                <div class="vital-value" id="recState">就绪</div>
-                <div class="vital-unit" id="recFile">--</div>
             </div>
         </div>
     </section>
 
-    <!-- 底部操作栏 -->
+    <!-- 操作栏 -->
     <section class="panel action-bar">
-        <button class="primary-btn" id="recordBtn">● 开始记录</button>
-        <button class="ghost-btn" id="stopBtn">■ 停止记录</button>
-        <button class="ghost-btn" id="importBtn">导入 CSV 回放</button>
+        <button class="btn btn-primary" id="recordBtn">● 开始记录</button>
+        <button class="btn btn-ghost" id="stopRecBtn">■ 停止记录</button>
+        <button class="btn btn-ghost" id="importBtn">导入 CSV 回放</button>
         <select id="playbackSelect" class="playback-select">
             <option value="">— 选择记录文件 —</option>
         </select>
-        <button class="ghost-btn" id="playBtn">▶ 回放</button>
-        <button class="ghost-btn" id="stopPlayBtn">⏹ 停止回放</button>
-        <button class="ghost-btn" id="exportPngBtn">导出 PNG</button>
-        <button class="ghost-btn" id="exportCsvBtn">导出 CSV</button>
+        <button class="btn btn-ghost" id="playBtn">▶ 回放</button>
+        <button class="btn btn-ghost" id="stopPlayBtn">⏹ 停止回放</button>
         <input type="file" id="csvInput" accept=".csv" style="display:none">
     </section>
 </div>
+
+<script>
+const CH_COLORS = ['#6355FF', '#00B14F', '#FF7A45', '#1B6FF9'];
+const ecgCanvas = document.getElementById('ecgCanvas');
+const piezoCanvas = document.getElementById('piezoCanvas');
+const ecgCtx = ecgCanvas.getContext('2d');
+const piezoCtx = piezoCanvas.getContext('2d');
+const matrixGrid = document.getElementById('matrixGrid');
+
+// 构建 4x4 矩阵格子
+for (let i = 0; i < 16; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'matrix-cell';
+    cell.id = `mc-${i}`;
+    cell.textContent = '0';
+    matrixGrid.appendChild(cell);
+}
+
+function drawGrid(ctx, w, h, rows, cols, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= cols; i++) {
+        ctx.beginPath(); ctx.moveTo(i * w / cols, 0); ctx.lineTo(i * w / cols, h); ctx.stroke();
+    }
+    for (let i = 0; i <= rows; i++) {
+        ctx.beginPath(); ctx.moveTo(0, i * h / rows); ctx.lineTo(w, i * h / rows); ctx.stroke();
+    }
+}
+
+function onSample() {
+    // ECG
+    const ecgW = ecgCanvas.width, ecgH = ecgCanvas.height;
+    ecgCtx.clearRect(0, 0, ecgW, ecgH);
+    drawGrid(ecgCtx, ecgW, ecgH, 4, 10, getComputedStyle(document.body).getPropertyValue('--wave-grid'));
+    const channels = document.querySelectorAll('.ecg-ch');
+    const enabled = Array.from(channels).map(c => c.checked);
+    for (let ch = 0; ch < 4; ch++) {
+        if (!enabled[ch]) continue;
+        const data = globalState.ecg[ch];
+        if (data.length < 2) continue;
+        const baseY = (ch + 0.5) * (ecgH / 4);
+        ecgCtx.strokeStyle = CH_COLORS[ch];
+        ecgCtx.lineWidth = 1.5;
+        ecgCtx.beginPath();
+        data.forEach((v, i) => {
+            const x = (i / MAX_POINTS) * ecgW;
+            const y = baseY - v * (ecgH / 4) * 0.4;
+            i === 0 ? ecgCtx.moveTo(x, y) : ecgCtx.lineTo(x, y);
+        });
+        ecgCtx.stroke();
+    }
+
+    // Piezo
+    const pW = piezoCanvas.width, pH = piezoCanvas.height;
+    piezoCtx.clearRect(0, 0, pW, pH);
+    drawGrid(piezoCtx, pW, pH, 2, 10, getComputedStyle(document.body).getPropertyValue('--wave-grid'));
+    for (let ch = 0; ch < 2; ch++) {
+        const data = globalState.piezo[ch];
+        if (data.length < 2) continue;
+        const baseY = (ch + 0.5) * (pH / 2);
+        piezoCtx.strokeStyle = CH_COLORS[ch * 2];
+        piezoCtx.lineWidth = 1.5;
+        piezoCtx.beginPath();
+        data.forEach((v, i) => {
+            const x = (i / MAX_POINTS) * pW;
+            const y = baseY - v * (pH / 2) * 0.4;
+            i === 0 ? piezoCtx.moveTo(x, y) : piezoCtx.lineTo(x, y);
+        });
+        piezoCtx.stroke();
+    }
+
+    // Matrix
+    const mode = document.getElementById('matrixMode').value;
+    const maxVal = mode === 'resistance' ? 100 : 1000;
+    for (let i = 0; i < 16; i++) {
+        const cell = document.getElementById(`mc-${i}`);
+        let val = globalState.matrix[i] || 0;
+        if (mode === 'pressure') val = val < 10 ? val * 0.01 : val * 0.005 + 25;
+        const t = Math.min(val / maxVal, 1);
+        cell.style.background = lerpColor(t);
+        cell.textContent = mode === 'resistance' ? val.toFixed(0) : val.toFixed(1);
+    }
+
+    // Vitals
+    document.getElementById('hrValue').textContent = globalState.hr;
+    document.getElementById('rrValue').textContent = globalState.rr;
+}
+
+// 矩阵模式切换
+document.getElementById('matrixMode').addEventListener('change', async (e) => {
+    await fetch('/api/matrix/mode', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: e.target.value })
+    });
+});
+
+// 记录控制
+document.getElementById('recordBtn').addEventListener('click', async () => {
+    const name = `record_${Date.now()}`;
+    const r = await fetch('/api/record/start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const d = await r.json();
+    if (d.ok) document.getElementById('recordBtn').textContent = '● 记录中...';
+});
+document.getElementById('stopRecBtn').addEventListener('click', async () => {
+    await fetch('/api/record/stop', { method: 'POST' });
+    document.getElementById('recordBtn').textContent = '● 开始记录';
+    refreshRecords();
+});
+
+async function refreshRecords() {
+    const r = await fetch('/api/records');
+    const d = await r.json();
+    const sel = document.getElementById('playbackSelect');
+    sel.innerHTML = '<option value="">— 选择记录文件 —</option>';
+    d.forEach(f => {
+        const o = document.createElement('option');
+        o.value = f.filename; o.textContent = f.filename;
+        sel.appendChild(o);
+    });
+}
+refreshRecords();
+
+document.getElementById('playBtn').addEventListener('click', async () => {
+    const fn = document.getElementById('playbackSelect').value;
+    if (!fn) return;
+    const r = await fetch(`/api/playback/${encodeURIComponent(fn)}`);
+    const d = await r.json();
+    if (d.ok) alert(`已加载 ${d.count} 行数据，回放功能开发中`);
+});
+</script>
 {% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}生命体征 · 多模态采集上位机{% endblock %}
+{% block content %}
+<h1 class="page-title">生命体征</h1>
+<div class="vitals-page">
+    <div class="big-vitals">
+        <div class="big-vital">
+            <div class="bv-label">心率 HR</div>
+            <div class="bv-value" id="bigHr">72</div>
+            <div class="bv-unit">BPM</div>
+        </div>
+        <div class="big-vital">
+            <div class="bv-label">呼吸率 RR</div>
+            <div class="bv-value" id="bigRr">16</div>
+            <div class="bv-unit">次/分</div>
+        </div>
+    </div>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>趋势图</h2>
+            <div class="head-actions">
+                <select class="playback-select" id="trendRange">
+                    <option value="1">1 分钟</option>
+                    <option value="5" selected>5 分钟</option>
+                    <option value="30">30 分钟</option>
+                </select>
+            </div>
+        </div>
+        <div class="vital-trend">
+            <canvas id="hrTrend" width="1000" height="120"></canvas>
+        </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+        <div class="panel-head"><h2>异常告警</h2></div>
+        <div class="panel-body" id="alerts" style="min-height:80px">
+            <div style="color:var(--text-tertiary);text-align:center;padding:20px">暂无告警</div>
+        </div>
+    </section>
+</div>
+
+<script>
+const hrHistory = [];
+function onSample() {
+    document.getElementById('bigHr').textContent = globalState.hr;
+    document.getElementById('bigRr').textContent = globalState.rr;
+    hrHistory.push(globalState.hr);
+    if (hrHistory.length > 300) hrHistory.shift();
+    const canvas = document.getElementById('hrTrend');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (hrHistory.length < 2) return;
+    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--wave-grid');
+    for (let i = 0; i <= 4; i++) { ctx.beginPath(); ctx.moveTo(0,i*h/4); ctx.lineTo(w,i*h/4); ctx.stroke(); }
+    ctx.strokeStyle = '#6355FF'; ctx.lineWidth = 2; ctx.beginPath();
+    hrHistory.forEach((v, i) => {
+        const x = (i / 300) * w;
+        const y = h - (v / 150) * h;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+}
+</script>
+{% endblock %}

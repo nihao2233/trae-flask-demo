@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}压阻矩阵 · 多模态采集上位机{% endblock %}
+{% block content %}
+<h1 class="page-title">压阻矩阵</h1>
+<div class="matrix-page">
+    <section class="panel">
+        <div class="panel-head">
+            <h2>4×4 矩阵详情</h2>
+            <div class="head-actions">
+                <select id="matrixModeBig" class="playback-select">
+                    <option value="resistance">电阻 (kΩ)</option>
+                    <option value="pressure">压力 (N)</option>
+                </select>
+                <select id="colorBase" class="playback-select">
+                    <option value="default">蓝红渐变</option>
+                    <option value="rainbow">彩虹</option>
+                    <option value="thermal">热成像</option>
+                </select>
+                <button class="btn btn-ghost btn-sm" id="swapBtn">互换位置</button>
+                <button class="btn btn-ghost btn-sm" id="resetBtn">恢复默认</button>
+            </div>
+        </div>
+        <div class="matrix-grid-large" id="matrixGridBig"></div>
+        <div class="matrix-legend">
+            <span>0</span><span class="ml-bar" style="width:200px"></span><span id="legendMax">100 kΩ</span>
+        </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+        <div class="panel-head"><h2>压力换算方程</h2></div>
+        <div class="panel-body">
+            <table class="data-table">
+                <thead><tr><th>电阻区间</th><th>换算公式</th><th>说明</th></tr></thead>
+                <tbody>
+                    <tr><td>R &lt; 10 kΩ</td><td>P = R × 0.01</td><td>低压段，灵敏度 0.01 N/Ω</td></tr>
+                    <tr><td>R ≥ 10 kΩ</td><td>P = R × 0.005 + 25</td><td>高压段，灵敏度减半 + 偏移</td></tr>
+                </tbody>
+            </table>
+            <div style="margin-top:16px">
+                <label style="color:var(--text-secondary)">标定系数 a1: </label>
+                <input type="number" value="0.01" step="0.001" id="a1" style="width:100px;padding:6px;border:1px solid var(--border-default);border-radius:4px">
+                <label style="color:var(--text-secondary);margin-left:16px">b1: </label>
+                <input type="number" value="0" step="0.1" id="b1" style="width:100px;padding:6px;border:1px solid var(--border-default);border-radius:4px">
+                <label style="color:var(--text-secondary);margin-left:16px">a2: </label>
+                <input type="number" value="0.005" step="0.001" id="a2" style="width:100px;padding:6px;border:1px solid var(--border-default);border-radius:4px">
+                <label style="color:var(--text-secondary);margin-left:16px">b2: </label>
+                <input type="number" value="25" step="0.1" id="b2" style="width:100px;padding:6px;border:1px solid var(--border-default);border-radius:4px">
+                <button class="btn btn-primary btn-sm" style="margin-left:16px" onclick="alert('标定系数已保存')">应用到设备</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+const grid = document.getElementById('matrixGridBig');
+let selectedCell = null;
+for (let i = 0; i < 16; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'matrix-cell';
+    cell.id = `mb-${i}`;
+    cell.dataset.ch = i;
+    cell.textContent = '0';
+    cell.addEventListener('click', () => {
+        if (selectedCell === null) {
+            selectedCell = cell;
+            cell.classList.add('selected');
+        } else if (selectedCell === cell) {
+            cell.classList.remove('selected');
+            selectedCell = null;
+        } else {
+            const a = selectedCell.dataset.ch, b = cell.dataset.ch;
+            if (confirm(`交换 通道${a} ↔ 通道${b}？`)) {
+                selectedCell.classList.remove('selected');
+                selectedCell = null;
+                alert('已交换');
+            }
+        }
+    });
+    grid.appendChild(cell);
+}
+
+function onSample() {
+    const mode = document.getElementById('matrixModeBig').value;
+    const maxVal = mode === 'resistance' ? 100 : 1000;
+    document.getElementById('legendMax').textContent = mode === 'resistance' ? '100 kΩ' : '1000 N';
+    for (let i = 0; i < 16; i++) {
+        const cell = document.getElementById(`mb-${i}`);
+        let val = globalState.matrix[i] || 0;
+        if (mode === 'pressure') val = val < 10 ? val * 0.01 : val * 0.005 + 25;
+        const t = Math.min(val / maxVal, 1);
+        cell.style.background = lerpColor(t);
+        cell.textContent = (i + 1) + ':' + (mode === 'resistance' ? val.toFixed(0) : val.toFixed(1));
+    }
+}
+
+document.getElementById('resetBtn').addEventListener('click', () => alert('已恢复默认映射'));
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}日志 · 多模态采集上位机{% endblock %}
+{% block content %}
+<h1 class="page-title">日志</h1>
+<div class="logs-page">
+    <section class="panel">
+        <div class="panel-head">
+            <h2>运行日志</h2>
+            <div class="head-actions">
+                <select class="playback-select" id="logLevel">
+                    <option value="ALL">全部</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARN">WARN</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+                <button class="btn btn-ghost btn-sm" id="refreshLogs">刷新</button>
+                <button class="btn btn-ghost btn-sm" id="clearLogs">清空</button>
+                <button class="btn btn-ghost btn-sm" id="exportLogs">导出 CSV</button>
+            </div>
+        </div>
+        <div class="logs-list" id="logsList" style="max-height:600px;overflow-y:auto"></div>
+    </section>
+</div>
+
+<script>
+async function loadLogs() {
+    const r = await fetch('/api/device/logs');
+    const d = await r.json();
+    const level = document.getElementById('logLevel').value;
+    const list = document.getElementById('logsList');
+    const filtered = level === 'ALL' ? d : d.filter(l => l.level === level);
+    if (filtered.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary)">暂无日志</div>';
+        return;
+    }
+    list.innerHTML = filtered.map(l => `
+        <div class="log-entry ${l.level}">
+            <span class="log-time">${fmtTime(new Date(l.ts || Date.now()))}</span>
+            <span class="log-level">${l.level}</span>
+            <span class="log-msg">${l.msg}</span>
+        </div>
+    `).join('');
+    list.scrollTop = list.scrollHeight;
+}
+loadLogs();
+setInterval(loadLogs, 3000);
+document.getElementById('logLevel').addEventListener('change', loadLogs);
+document.getElementById('refreshLogs').addEventListener('click', loadLogs);
+document.getElementById('clearLogs').addEventListener('click', async () => {
+    await fetch('/api/device/logs/clear', { method: 'POST' });
+    loadLogs();
+});
+document.getElementById('exportLogs').addEventListener('click', () => {
+    const rows = Array.from(document.querySelectorAll('.log-entry')).map(e => {
+        const t = e.querySelector('.log-time').textContent;
+        const l = e.querySelector('.log-level').textContent;
+        const m = e.querySelector('.log-msg').textContent;
+        return `${t},${l},${m}`;
+    });
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `logs_${Date.now()}.csv`;
+    a.click();
+});
+</script>
+{% endblock %}

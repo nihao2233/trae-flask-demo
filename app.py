@@ -28,6 +28,22 @@ from core.storage import StorageService
 
 app = Flask(__name__)
 
+# 禁用模板缓存，确保模板修改立即生效
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # 禁用静态文件缓存
+
+# 导航图标映射
+NAV_ICONS = {
+    "index": "📊", "matrix": "▦", "piezo": "〰", "vitals": "♥",
+    "replay": "⏮", "device": "🔌", "config": "⚙", "upgrade": "⬆", "logs": "☰",
+}
+
+
+@app.context_processor
+def inject_icons():
+    return {"nav_icons": NAV_ICONS}
+
+
 # 全局共享对象（演示用单例即可；后续可放进 application context）
 device = SimDevice(sample_rate=500)
 business = BusinessService(sample_rate=device.sample_rate)
@@ -37,15 +53,67 @@ storage = StorageService()
 MATRIX_MODE = "resistance"
 
 
-# ---------- 页面路由 -------------------------------------------------------
+# ---------- 页面路由（9 个页面）-------------------------------------------
+PAGES = [
+    ("index", "主监测", "monitor"),
+    ("matrix", "压阻矩阵", "matrix"),
+    ("piezo", "压电波形", "piezo"),
+    ("vitals", "生命体征", "vitals"),
+    ("replay", "记录回放", "replay"),
+    ("device", "设备状态", "device"),
+    ("config", "参数配置", "config"),
+    ("upgrade", "固件升级", "upgrade"),
+    ("logs", "日志", "logs"),
+]
+
+
+def _nav(active: str):
+    return [{"id": i, "label": l, "active": i == active} for i, l, _ in PAGES]
+
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", nav=_nav("index"))
+
+
+@app.route("/matrix")
+def matrix_page():
+    return render_template("matrix.html", nav=_nav("matrix"))
+
+
+@app.route("/piezo")
+def piezo_page():
+    return render_template("piezo.html", nav=_nav("piezo"))
+
+
+@app.route("/vitals")
+def vitals_page():
+    return render_template("vitals.html", nav=_nav("vitals"))
+
+
+@app.route("/replay")
+def replay_page():
+    return render_template("replay.html", nav=_nav("replay"))
 
 
 @app.route("/device")
 def device_page():
-    return render_template("device.html")
+    return render_template("device.html", nav=_nav("device"))
+
+
+@app.route("/config")
+def config_page():
+    return render_template("config.html", nav=_nav("config"))
+
+
+@app.route("/upgrade")
+def upgrade_page():
+    return render_template("upgrade.html", nav=_nav("upgrade"))
+
+
+@app.route("/logs")
+def logs_page():
+    return render_template("logs.html", nav=_nav("logs"))
 
 
 # ---------- SSE 实时数据流 -------------------------------------------------
