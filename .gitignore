@@ -9,6 +9,9 @@ env/
 # 运行时数据
 data/*.csv
 
+# 日志
+*.log
+
 # 系统/IDE
 .DS_Store
 Thumbs.db
@@ -17,3 +20,17 @@ Thumbs.db
 
 # Trae / agent 缓存
 .trae/
+
+# 本地协作文档（不同步到仓库）
+GIT_WORKFLOW.md
+PR_BODY.md
+
+# 上位机运行产物
+src/mac_pcq/ui/resources/i18n/*.qm
+*.pyc
+.pytest_cache/
+build/
+dist/
+
+# 旧 Flask 演示工程
+legacy/
